@@ -1,0 +1,453 @@
+@import "tailwindcss";
+/* --ds-* / --wc-* custom properties behind every class the tokens preset generates. */
+@import "@whitecapgeospatial/tokens/tokens.css";
+
+@config "../tailwind.config.js";
+
+/* The map uses a dark basemap; the tokens' light-dark() pairs follow this. */
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--ds-bg);
+  color: var(--ds-text);
+  font-family: var(--ds-font-sans);
+  font-size: var(--ds-text-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+}
+
+/* ---------- floating chrome ---------- */
+/* Chrome stacks above the map canvases. */
+.top-bar,
+.legend,
+.scrubber {
+  z-index: 5;
+}
+
+.top-bar {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.top-bar > * {
+  pointer-events: auto;
+}
+.map-control {
+  box-shadow: 0 4px 18px rgb(0 0 0 / 0.35);
+}
+.app-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.7);
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.app-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ds-text-muted);
+}
+
+.status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px 16px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+}
+
+.filter-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-accent);
+  color: var(--ds-accent-fg);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ---------- filter popover ---------- */
+.filter-popover {
+  width: min(380px, calc(100vw - 24px));
+  padding: 12px;
+}
+.filter-scroll {
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.filter-group {
+  border-top: 1px solid var(--ds-border);
+  padding: 10px 0;
+}
+.filter-group > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.filter-group > summary::-webkit-details-marker {
+  display: none;
+}
+.filter-group > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--ds-duration-fast);
+  opacity: 0.6;
+}
+.filter-group > summary > .filter-badge {
+  margin-left: 8px;
+  margin-right: 10px;
+}
+.filter-group[open] > summary::after {
+  transform: rotate(-135deg);
+}
+.chip {
+  border-radius: var(--ds-radius-pill);
+  cursor: pointer;
+}
+.chip > * {
+  gap: 6px;
+}
+.chip:focus-visible {
+  outline: var(--ds-focus-ring-width) solid var(--ds-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---------- legend ---------- */
+.legend {
+  position: absolute;
+  left: 12px;
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  padding: 8px 12px;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--ds-surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 0.35);
+}
+.legend-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.legend-heading {
+  color: var(--ds-text-muted);
+  margin-bottom: 4px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 0.7);
+}
+/* Mirrors FadeCircleLayer's falloff. */
+.legend-haze {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(226 232 240 / 0.5) 0%, rgb(226 232 240 / 0.22) 40%, rgb(226 232 240 / 0) 70%);
+}
+
+/* ---------- time scrubber ---------- */
+.scrubber {
+  position: absolute;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  background: color-mix(in srgb, var(--ds-surface) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 0.35);
+}
+.scrubber[data-open] {
+  width: min(640px, calc(100vw - 24px));
+}
+.scrubber-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.scrubber-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 14px 12px;
+}
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-raised);
+}
+.histogram {
+  width: 100%;
+  height: 44px;
+  display: block;
+}
+.histogram rect {
+  fill: var(--ds-text-muted);
+  opacity: 0.35;
+}
+.histogram rect[data-in] {
+  fill: var(--ds-accent);
+  opacity: 0.9;
+}
+
+/* ---------- detail panel ---------- */
+.detail-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: 420px;
+  z-index: 10;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.45);
+  animation: panel-in var(--ds-duration-normal) var(--ds-ease-out);
+}
+@keyframes panel-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+.tabs {
+  position: sticky;
+  top: -16px;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  margin: 0 -18px;
+  padding: 0 18px;
+  background: var(--ds-surface);
+  border-bottom: 1px solid var(--ds-border);
+}
+.tabs [role="tab"] {
+  padding: 10px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabs [role="tab"][aria-selected="true"] {
+  color: var(--ds-text);
+  border-bottom-color: var(--ds-accent);
+}
+.tabs [role="tab"]:focus-visible {
+  outline: var(--ds-focus-ring-width) solid var(--ds-focus-ring);
+  outline-offset: -2px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+}
+.facts {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.facts > div {
+  display: grid;
+  grid-template-columns: 42% 1fr;
+  gap: 8px;
+}
+.facts dt {
+  color: var(--ds-text-muted);
+}
+.facts a {
+  color: var(--ds-accent-text);
+}
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.metrics > div {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-raised);
+}
+.metrics > div[data-empty] {
+  opacity: 0.5;
+}
+.metric-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+.metric-label {
+  font-size: 11px;
+  color: var(--ds-text-muted);
+}
+.link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-raised);
+  color: var(--ds-accent-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.link-row:hover {
+  background: color-mix(in srgb, var(--ds-surface-raised) 80%, var(--ds-accent));
+}
+.location-row {
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: var(--ds-radius-sm);
+  background: var(--ds-surface-raised);
+  border-left: 3px solid transparent;
+  outline: none;
+}
+.location-row[data-highlighted],
+.location-row:focus-visible {
+  border-left-color: var(--ds-accent);
+  background: color-mix(in srgb, var(--ds-surface-raised) 82%, var(--ds-accent));
+}
+
+/* ---------- mobile bottom sheet (vaul) ---------- */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ds-surface);
+  border-top: 1px solid var(--ds-border);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -8px 30px rgb(0 0 0 / 0.45);
+  outline: none;
+}
+.sheet-handle {
+  margin-top: 8px !important;
+  width: 44px !important;
+  background: var(--ds-text-muted) !important;
+  opacity: 0.6;
+}
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  /* Only the fully open sheet scrolls; at the peek, drags move the sheet. */
+  overflow-y: hidden;
+  /* The sheet is 100dvh tall but snaps to 94%, so pad by the hidden 6%. */
+  padding: 10px 16px calc(6dvh + 24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sheet-body[data-expanded] {
+  overflow-y: auto;
+}
+.sheet .tabs {
+  top: -10px;
+  margin: 0 -16px;
+  padding: 0 16px;
+  overflow-x: auto;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 640px) {
+  .legend {
+    top: calc(max(12px, env(safe-area-inset-top)) + 52px);
+    bottom: auto;
+    left: 12px;
+  }
+  .legend:not([data-open]) {
+    padding: 6px 10px;
+  }
+  .scrubber {
+    bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  /* Pinch zoom replaces the buttons; they would sit under the drawer. */
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
+    display: none;
+  }
+  .maplibregl-ctrl-bottom-right {
+    bottom: 64px;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
