@@ -2,7 +2,6 @@ import { Button, Pill, Popover, PopoverContent, PopoverTrigger } from "@whitecap
 import { type ReactNode, useMemo } from "react";
 import { CONFIDENCES, eventTitle, type FloodEvent } from "../data";
 import { activeCount, emptyFilters, type Filters, impactCounts, toggle, vocabulary } from "../filters";
-import { CONFIDENCE_COLOR, cssRgb } from "../theme";
 
 type Props = {
   events: FloodEvent[];
@@ -68,7 +67,6 @@ export function FilterMenu({ events, filters, shown, onChange, onSelect }: Props
           <Group title="Confidence" count={filters.confidence.size} open>
             {CONFIDENCES.map((c) => (
               <Chip key={c} on={filters.confidence.has(c)} onClick={() => set("confidence", toggle(filters.confidence, c))}>
-                <span aria-hidden className="inline-block size-2 rounded-full" style={{ background: cssRgb(CONFIDENCE_COLOR[c]) }} />
                 {c}
               </Chip>
             ))}

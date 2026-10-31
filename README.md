@@ -55,8 +55,9 @@ The sheet joins two schemas side by side. Columns 0–58 are the current compend
 **On the map**
 
 - Event points come from `Area Latitude`/`Area Longitude` (summary rows).
-- Point colour shows `Confidence in Flash Flood`. Point size is fixed. Size never encodes impact, so a large point cannot be read as a large flood.
-- Location uncertainty comes from `Uncertainty in Area Lat/Long (degrees) - radius`. The older `Uncertainty in Lat/Long (km)` fills gaps. It is drawn as a soft radial haze with no edge, in a neutral colour unlike any point colour. The haze thins when you zoom far inside it. The legend says it is not the flooded area.
+- Every event and affected location is the same red dot, at a fixed size. Neither colour nor size encodes confidence or impact; confidence is shown as a pill in the panel and is a filter.
+- Location uncertainty comes from `Uncertainty in Area Lat/Long (degrees) - radius`. The older `Uncertainty in Lat/Long (km)` fills gaps. It appears only for the hovered point and the selected event: a translucent white disc with a dashed edge, at least 12 px across so it clears the dot. The legend says it is not the flooded area.
+- The basemap follows the system light/dark setting: CARTO Positron (light, the default) or Dark Matter. The UI follows the same setting through the design tokens.
 - The time scrubber uses `Start Date`.
 - Filters:
   - Confidence
@@ -73,7 +74,7 @@ The sheet joins two schemas side by side. Columns 0–58 are the current compend
 - **Links:**
   - IFRC GO emergency links and the IFRC GO flood flag
   - Dartmouth Flood Observatory number
-  - A video viewer that embeds YouTube and Facebook videos and links other hosts
+  - A video viewer that embeds YouTube and Facebook videos and links other hosts. Some rights holders (for example AFP) block YouTube playback on other sites; the viewer detects this through the IFrame Player API (`onError` 101/150) and shows a "Watch on YouTube" card instead
   - Media links from the event and its locations
 
 Open an event directly with `#event=<event_id>`.

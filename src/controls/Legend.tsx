@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { CONFIDENCES } from "../data";
-import { CONFIDENCE_COLOR, cssRgb, UNKNOWN_COLOR } from "../theme";
+import { cssRgb, EVENT_COLOR } from "../theme";
 
 export function Legend({ hidden, defaultOpen }: { hidden: boolean; defaultOpen: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -14,29 +13,28 @@ export function Legend({ hidden, defaultOpen }: { hidden: boolean; defaultOpen: 
         </svg>
       </button>
       {open && (
-        <div className="flex flex-col gap-2 pt-2">
-          <div>
-            <p className="legend-heading">Flash flood confidence</p>
-            <ul className="flex flex-col gap-1">
-              {CONFIDENCES.map((c) => (
-                <li key={c} className="flex items-center gap-2">
-                  <span aria-hidden className="legend-dot" style={{ background: cssRgb(CONFIDENCE_COLOR[c]) }} />
-                  {c}
-                </li>
-              ))}
-              <li className="flex items-center gap-2">
-                <span aria-hidden className="legend-dot" style={{ background: cssRgb(UNKNOWN_COLOR) }} />
-                Not rated
-              </li>
-            </ul>
-          </div>
-          <div className="flex items-start gap-2">
-            <span aria-hidden className="legend-haze" />
+        <ul className="flex flex-col gap-2 pt-2">
+          <li className="flex items-center gap-2">
+            <span aria-hidden className="legend-swatch">
+              <span className="legend-dot" style={{ background: cssRgb(EVENT_COLOR) }} />
+            </span>
+            Flood event
+          </li>
+          <li className="flex items-center gap-2">
+            <span aria-hidden className="legend-swatch">
+              <span className="legend-dot legend-dot-sm" style={{ background: cssRgb(EVENT_COLOR) }} />
+            </span>
+            Affected location
+          </li>
+          <li className="flex items-start gap-2">
+            <span aria-hidden className="legend-swatch">
+              <span className="legend-ring" />
+            </span>
             <p className="max-w-44 leading-snug">
-              <strong>Location uncertainty.</strong> The event was recorded somewhere in this haze. It is not the flooded area.
+              <strong>Location uncertainty</strong> (on hover). The event was recorded somewhere inside the ring. It is not the flooded area.
             </p>
-          </div>
-        </div>
+          </li>
+        </ul>
       )}
     </section>
   );

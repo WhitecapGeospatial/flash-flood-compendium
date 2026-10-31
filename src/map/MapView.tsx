@@ -9,8 +9,8 @@ import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Map, type MapRef, NavigationControl, useControl } from "react-map-gl/maplibre";
 import { eventTitle, type FloodEvent, type FloodRecord } from "../data";
-import { BASEMAP_STYLE, CONFIDENCE_COLOR, METERS_PER_DEGREE, UNCERTAINTY_COLOR, UNKNOWN_COLOR } from "../theme";
-import { FadeCircleLayer } from "./FadeCircleLayer";
+import { EVENT_COLOR, MAP_THEME, METERS_PER_DEGREE, type Scheme } from "../theme";
+import { DashedCircleLayer } from "./DashedCircleLayer";
 
 setWorkerUrl(maplibreWorkerUrl);
 
@@ -24,11 +24,14 @@ type Props = {
   selected: FloodEvent | null;
   highlightedRecord: number | null;
   padding: MapPadding;
+  scheme: Scheme;
   onSelect: (e: FloodEvent | null) => void;
   onHoverRecord: (recordId: number | null) => void;
 };
 
 const EXPLODE_MS = 650;
+/** Smallest on-screen uncertainty ring, so it always clears the 6 px event dot. */
+const MIN_RING_PX = 12;
 
 function DeckOverlay({ layers, onClickEmpty }: { layers: LayersList; onClickEmpty: () => void }) {
   const overlay = useControl(() => new MapboxOverlay({ interleaved: false }));
@@ -41,15 +44,17 @@ function DeckOverlay({ layers, onClickEmpty }: { layers: LayersList; onClickEmpt
     getTooltip: ({ object }: PickingInfo<FloodRecord>) =>
       object ? {
         text: object.level === "event" ? `${eventTitle(object)} · ${object.country ?? ""}` : eventTitle(object),
-        style: { background: "rgba(10,20,35,0.92)", color: "#fff", fontSize: "12px", borderRadius: "6px", padding: "4px 8px" },
+        className: "map-tooltip",
       } : null,
   });
   return null;
 }
 
-export function MapView({ events, selected, highlightedRecord, padding, onSelect, onHoverRecord }: Props) {
+export function MapView({ events, selected, highlightedRecord, padding, scheme, onSelect, onHoverRecord }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [explode, setExplode] = useState(0);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const theme = MAP_THEME[scheme];
 
   const located = useMemo(() => events.filter(isLocated) as (FloodEvent & Located)[], [events]);
   const locations = useMemo(() => (selected ? selected.locations.filter(isLocated) : []), [selected]);
@@ -85,54 +90,56 @@ export function MapView({ events, selected, highlightedRecord, padding, onSelect
 
   const layers = useMemo(() => {
     const sel = selected && isLocated(selected) ? selected : null;
-    const dim = (id: number) => (sel && sel.event_id !== id ? 70 : 235);
     const lerp = (a: number, b: number) => a + (b - a) * explode;
-    const exploded = (r: Located): [number, number] => (sel ? [lerp(sel.lon, r.lon), lerp(sel.lat, r.lat)] : [r.lon, r.lat]);
+    const position = (r: Located): [number, number] =>
+      sel && r.level === "location" ? [lerp(sel.lon, r.lon), lerp(sel.lat, r.lat)] : [r.lon, r.lat];
+    const isSel = (r: FloodRecord) => r.event_id === sel?.event_id;
+    const isHot = (r: Located) => r.record_id === hovered || r.record_id === highlightedRecord;
+
+    // Uncertainty is shown only for the hovered point and the selected event.
+    const rings = [...located, ...locations].filter(
+      (r) => r.uncertainty_deg != null && (isHot(r) || (r.level === "event" && isSel(r))),
+    );
 
     return [
-      new FadeCircleLayer<Located>({
-        id: "event-uncertainty",
-        data: located,
-        getPosition: (d) => [d.lon, d.lat],
-        getRadius: (d) => (d.uncertainty_deg ?? 0) * METERS_PER_DEGREE,
-        getFillColor: (d) => [...UNCERTAINTY_COLOR, sel ? (d.event_id === sel.event_id ? 80 : 14) : 55],
+      new DashedCircleLayer<Located>({
+        id: "uncertainty",
+        data: rings,
+        getPosition: position,
+        getRadius: (d) => d.uncertainty_deg! * METERS_PER_DEGREE * (d.level === "location" ? explode : 1),
         radiusUnits: "meters",
-        stroked: false,
-        updateTriggers: { getFillColor: sel?.event_id },
-      }),
-      new FadeCircleLayer<Located>({
-        id: "location-uncertainty",
-        data: locations,
-        visible: locations.length > 0,
-        getPosition: exploded,
-        getRadius: (d) => (d.uncertainty_deg ?? 0) * METERS_PER_DEGREE * explode,
-        getFillColor: [...UNCERTAINTY_COLOR, 70],
-        radiusUnits: "meters",
-        stroked: false,
-        updateTriggers: { getPosition: explode, getRadius: explode },
+        radiusMinPixels: MIN_RING_PX,
+        getFillColor: theme.uncertaintyFill,
+        getLineColor: theme.uncertaintyLine,
+        lineWidthUnits: "pixels",
+        getLineWidth: 1.5,
+        stroked: true,
+        filled: true,
+        updateTriggers: { getPosition: explode, getRadius: explode, getFillColor: scheme, getLineColor: scheme },
       }),
       new LineLayer<Located>({
         id: "location-links",
         data: locations,
         visible: locations.length > 0,
         getSourcePosition: () => [sel!.lon, sel!.lat],
-        getTargetPosition: exploded,
-        getColor: [255, 255, 255, 110],
+        getTargetPosition: position,
+        getColor: theme.link,
         getWidth: 1,
-        updateTriggers: { getTargetPosition: explode, getSourcePosition: sel?.event_id },
+        updateTriggers: { getTargetPosition: explode, getSourcePosition: sel?.event_id, getColor: scheme },
       }),
       new ScatterplotLayer<Located>({
         id: "events",
         data: located,
         pickable: true,
-        getPosition: (d) => [d.lon, d.lat],
-        getRadius: (d) => (d.event_id === sel?.event_id ? 9 : 6),
-        getFillColor: (d) => [...(d.confidence ? CONFIDENCE_COLOR[d.confidence] : UNKNOWN_COLOR), dim(d.event_id)],
-        getLineColor: (d) => [255, 255, 255, d.event_id === sel?.event_id ? 255 : dim(d.event_id) * 0.6],
-        getLineWidth: (d) => (d.event_id === sel?.event_id ? 2.5 : 1),
+        getPosition: position,
+        getRadius: (d) => (isSel(d) ? 8 : 6),
+        getFillColor: (d) => [...EVENT_COLOR, sel && !isSel(d) ? 90 : 240],
+        getLineColor: (d) => [255, 255, 255, sel && !isSel(d) ? 90 : 255],
+        getLineWidth: (d) => (isSel(d) ? 2.5 : 1),
         radiusUnits: "pixels",
         lineWidthUnits: "pixels",
         stroked: true,
+        onHover: ({ object }) => setHovered(object ? (object as Located).record_id : null),
         onClick: ({ object }) => {
           onSelect(object as FloodEvent);
           return true;
@@ -144,25 +151,29 @@ export function MapView({ events, selected, highlightedRecord, padding, onSelect
         data: locations,
         visible: locations.length > 0,
         pickable: true,
-        getPosition: exploded,
-        getRadius: (d) => (d.record_id === highlightedRecord ? 7 : 4.5),
-        getFillColor: () => [...(sel!.confidence ? CONFIDENCE_COLOR[sel!.confidence] : UNKNOWN_COLOR), 255],
-        getLineColor: (d) => (d.record_id === highlightedRecord ? [255, 255, 255, 255] : [10, 20, 35, 255]),
-        getLineWidth: 1.5,
+        getPosition: position,
+        getRadius: (d) => (d.record_id === highlightedRecord ? 6 : 4),
+        getFillColor: [...EVENT_COLOR, 255],
+        getLineColor: [255, 255, 255, 255],
+        getLineWidth: (d) => (d.record_id === highlightedRecord ? 2 : 1),
         radiusUnits: "pixels",
         lineWidthUnits: "pixels",
         stroked: true,
-        onHover: ({ object }) => onHoverRecord(object ? (object as Located).record_id : null),
-        updateTriggers: { getPosition: explode, getRadius: highlightedRecord, getLineColor: highlightedRecord, getFillColor: sel?.event_id },
+        onHover: ({ object }) => {
+          const id = object ? (object as Located).record_id : null;
+          setHovered(id);
+          onHoverRecord(id);
+        },
+        updateTriggers: { getPosition: explode, getRadius: highlightedRecord, getLineWidth: highlightedRecord },
       }),
     ];
-  }, [located, locations, selected, explode, highlightedRecord, onSelect, onHoverRecord]);
+  }, [located, locations, selected, explode, hovered, highlightedRecord, theme, scheme, onSelect, onHoverRecord]);
 
   return (
     <Map
       ref={mapRef}
       initialViewState={{ longitude: 20, latitude: 10, zoom: 1.6 }}
-      mapStyle={BASEMAP_STYLE}
+      mapStyle={theme.basemap}
       style={{ position: "absolute", inset: 0 }}
       dragRotate={false}
       attributionControl={{ compact: true }}

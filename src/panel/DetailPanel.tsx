@@ -1,7 +1,6 @@
 import { Pill } from "@whitecapgeospatial/ui";
 import { type ReactNode, useId, useState } from "react";
 import { eventTitle, type FloodEvent, type FloodRecord, formatDateRange, IMPACT_FIELDS } from "../data";
-import { CONFIDENCE_COLOR, cssRgb, UNKNOWN_COLOR } from "../theme";
 import { VideoViewer } from "./VideoViewer";
 
 const TABS = [
@@ -21,8 +20,7 @@ type Props = {
 
 export function ConfidencePill({ level }: { level: FloodEvent["confidence"] }) {
   return (
-    <Pill variant="outline" size="sm" className="shrink-0 gap-1.5">
-      <span aria-hidden className="inline-block size-2 rounded-full" style={{ background: cssRgb(level ? CONFIDENCE_COLOR[level] : UNKNOWN_COLOR) }} />
+    <Pill variant="outline" size="sm" className="shrink-0">
       {level ? `${level} confidence` : "Confidence unknown"}
     </Pill>
   );

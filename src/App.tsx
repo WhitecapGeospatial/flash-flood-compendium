@@ -6,6 +6,7 @@ import { type Dataset, type FloodEvent, loadDataset } from "./data";
 import { emptyFilters, type Filters, matches } from "./filters";
 import { MapView, type MapPadding } from "./map/MapView";
 import { DesktopPanel, MobileSheet, SHEET_PEEK_PX } from "./panel/DetailShell";
+import { useColorScheme } from "./theme";
 
 const MOBILE_QUERY = "(max-width: 640px)";
 const DESKTOP_PANEL_PX = 440;
@@ -28,23 +29,30 @@ export function App() {
   const [selected, setSelected] = useState<FloodEvent | null>(null);
   const [highlighted, setHighlighted] = useState<number | null>(null);
   const mobile = useIsMobile();
+  const scheme = useColorScheme();
 
   useEffect(() => {
-    loadDataset().then(
-      (d) => {
-        setData(d);
-        const id = Number(new URLSearchParams(location.hash.slice(1)).get("event"));
-        setSelected(d.events.find((e) => e.event_id === id) ?? null);
-      },
-      (e: unknown) => setError(e instanceof Error ? e.message : String(e)),
-    );
+    loadDataset().then(setData, (e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
+
+  // #event=<id> deep-links to one event, on load and when the hash is edited.
+  useEffect(() => {
+    if (!data) return;
+    const fromHash = () => {
+      const id = Number(new URLSearchParams(location.hash.slice(1)).get("event"));
+      setSelected(data.events.find((e) => e.event_id === id) ?? null);
+      setHighlighted(null);
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => window.removeEventListener("hashchange", fromHash);
+  }, [data]);
 
   const events = data?.events ?? [];
   const untimed = useMemo(() => events.filter((e) => matches(e, filters, true)), [events, filters]);
   const visible = useMemo(() => (filters.time ? untimed.filter((e) => matches(e, filters)) : untimed), [untimed, filters]);
 
-  // #event=<id> deep-links to one event.
+  // replaceState keeps the hash in sync without firing hashchange.
   const select = useCallback((e: FloodEvent | null) => {
     setSelected(e);
     setHighlighted(null);
@@ -58,7 +66,7 @@ export function App() {
 
   return (
     <main className="app">
-      <MapView events={visible} selected={selected} highlightedRecord={highlighted} padding={padding} onSelect={select} onHoverRecord={setHighlighted} />
+      <MapView events={visible} selected={selected} highlightedRecord={highlighted} padding={padding} scheme={scheme} onSelect={select} onHoverRecord={setHighlighted} />
 
       <div className="top-bar">
         {data && <FilterMenu events={events} filters={filters} shown={visible.length} onChange={setFilters} onSelect={select} />}
