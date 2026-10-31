@@ -5,7 +5,7 @@ import { TimeScrubber } from "./controls/TimeScrubber";
 import { type Dataset, type FloodEvent, loadDataset } from "./data";
 import { emptyFilters, type Filters, matches } from "./filters";
 import { MapView, type MapPadding } from "./map/MapView";
-import { DesktopPanel, MobileSheet, SHEET_PEEK_PX } from "./panel/DetailShell";
+import { DesktopPanel, MobileSheet, SHEET_OPEN } from "./panel/DetailShell";
 import { useColorScheme } from "./theme";
 
 const MOBILE_QUERY = "(max-width: 640px)";
@@ -61,7 +61,7 @@ export function App() {
   const close = useCallback(() => select(null), [select]);
 
   const padding: MapPadding = mobile
-    ? { top: 64, right: 0, bottom: selected ? SHEET_PEEK_PX : 72, left: 0 }
+    ? { top: 64, right: 0, bottom: selected ? Math.round(window.innerHeight * SHEET_OPEN) : 72, left: 0 }
     : { top: 64, right: selected ? DESKTOP_PANEL_PX : 0, bottom: 96, left: 0 };
 
   return (

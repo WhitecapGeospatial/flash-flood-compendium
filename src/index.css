@@ -469,10 +469,10 @@ body {
 .sheet-body {
   flex: 1;
   min-height: 0;
-  /* Only the fully open sheet scrolls; at the peek, drags move the sheet. */
+  /* Only the open sheet scrolls; at the peek, drags move the sheet. */
   overflow-y: hidden;
-  /* The sheet is 100dvh tall but snaps to 94%, so pad by the hidden 6%. */
-  padding: 10px 16px calc(6dvh + 24px + env(safe-area-inset-bottom));
+  /* The sheet is 100dvh tall but opens to 35% (SHEET_OPEN), so pad by the hidden 65%. */
+  padding: 10px 16px calc(65dvh + 24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 12px;

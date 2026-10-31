@@ -13,7 +13,8 @@ type Props = {
 
 /** Height of the collapsed mobile drawer: enough for the headline and confidence pill. */
 export const SHEET_PEEK_PX = 148;
-const SHEET_FULL = 0.94;
+/** Open height of the mobile sheet, as a fraction of the screen. Also its maximum. */
+export const SHEET_OPEN = 0.35;
 
 function CloseButton({ onClose }: { onClose: () => void }) {
   return (
@@ -40,11 +41,11 @@ export function DesktopPanel({ event, highlightedRecord, onHoverRecord, onClose 
   );
 }
 
-/** Bottom sheet: opens near full screen, drags down to a peek drawer that keeps the headline. */
+/** Bottom sheet: opens to the bottom 35% of the screen, drags down to a peek drawer that keeps the headline. */
 export function MobileSheet({ event, highlightedRecord, onHoverRecord, onClose }: Props) {
-  const [snap, setSnap] = useState<number | string | null>(SHEET_FULL);
+  const [snap, setSnap] = useState<number | string | null>(SHEET_OPEN);
   useEffect(() => {
-    if (event) setSnap(SHEET_FULL);
+    if (event) setSnap(SHEET_OPEN);
   }, [event]);
 
   return (
@@ -52,7 +53,7 @@ export function MobileSheet({ event, highlightedRecord, onHoverRecord, onClose }
       open={!!event}
       modal={false}
       dismissible={false}
-      snapPoints={[`${SHEET_PEEK_PX}px`, SHEET_FULL]}
+      snapPoints={[`${SHEET_PEEK_PX}px`, SHEET_OPEN]}
       activeSnapPoint={snap}
       setActiveSnapPoint={setSnap}
     >
@@ -63,7 +64,7 @@ export function MobileSheet({ event, highlightedRecord, onHoverRecord, onClose }
           {event && (
             <>
               <Drawer.Title className="sr-only">{eventTitle(event)}</Drawer.Title>
-              <div className="sheet-body" data-expanded={snap === SHEET_FULL || undefined}>
+              <div className="sheet-body" data-expanded={snap === SHEET_OPEN || undefined}>
                 <DetailHeader event={event} actions={<CloseButton onClose={onClose} />} />
                 <DetailTabs key={event.event_id} event={event} highlightedRecord={highlightedRecord} onHoverRecord={onHoverRecord} />
               </div>
