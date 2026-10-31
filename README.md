@@ -4,7 +4,9 @@ A full-page map of documented flash flood events. Click an event to zoom in. If 
 
 Live site: https://whitecapgeospatial.github.io/flash-flood-compendium/
 
-The site is fully static. The browser reads the data as GeoParquet with HTTP range requests ([hyparquet](https://github.com/hyparam/hyparquet)) and renders it with deck.gl over a MapLibre basemap. There is no server.
+The site is fully static. The browser fetches one GeoParquet file, parses it with [hyparquet](https://github.com/hyparam/hyparquet), and renders it with deck.gl over a MapLibre basemap. There is no server.
+
+The file is fetched whole, not with HTTP range requests. GitHub Pages gzips the response and applies `Range` to the gzipped bytes, which breaks ranged Parquet reads. At ~140 KiB, one request is also faster.
 
 ## Data
 

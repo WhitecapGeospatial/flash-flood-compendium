@@ -1,4 +1,4 @@
-import { asyncBufferFromUrl, parquetMetadataAsync, parquetReadObjects } from "hyparquet";
+import { parquetMetadata, parquetReadObjects } from "hyparquet";
 
 export type Confidence = "High" | "Medium" | "Low";
 export const CONFIDENCES: Confidence[] = ["High", "Medium", "Low"];
@@ -96,8 +96,13 @@ export function rangeMin(r: string | null): number | null {
 
 export async function loadDataset(): Promise<Dataset> {
   const url = `${import.meta.env.BASE_URL}data/ffc.parquet`;
-  const file = await asyncBufferFromUrl({ url });
-  const metadata = await parquetMetadataAsync(file);
+  // One whole-file fetch, not HTTP range reads: GitHub Pages gzips the response
+  // and applies Range to the gzipped bytes, so ranged reads get the wrong footer.
+  // The file is ~140 KiB, so ranges would save nothing anyway.
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+  const file = await res.arrayBuffer();
+  const metadata = parquetMetadata(file);
   const sep = metadata.key_value_metadata?.find((kv) => kv.key === "ffc:list_separator")?.value ?? "|";
   const columns = metadata.schema.slice(1).map((s) => s.name).filter((n) => n !== "geometry");
   const rows = (await parquetReadObjects({ file, metadata, columns })) as Record<string, unknown>[];
